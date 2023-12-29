@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+  text-align: center;
+}
+
+canvas {
+  border: 1px solid #000;
+  display: block;
+  margin: auto;
+  margin-top: 20px;
+}
+
+#title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+
+#controls {
+  text-align: center;
+  margin-top: 20px;
+}
+
+button {
+  font-size: 16px;
+  margin: 5px;
+  padding: 15px 30px; 
+  background-color: #4CAF50; 
+  color: white; 
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: calc(33.33% - 10px); 
+}
+
+</style>
+
+  </style>
+  <title>Snake Game</title>
+</head>
+<body>
+  <div id="title">BIB GAME</div>
+
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <div id="controls">
+    <button onclick="changeDirection('up')">Atas</button>
+    <br>
+    <button onclick="changeDirection('left')">Kiri</button>
+    <button onclick="changeDirection('right')">Kanan</button>
+    <br>
+    <button onclick="changeDirection('down')">Bawah</button>
+  </div>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const gridSize = 20;
+    const snakeSize = 18;
+    const foodSize = 10;
+    const borderWidth = 2;
+    let snake = [{ x: 10, y: 10 }];
+    let direction = "right";
+    let food = { x: 15, y: 15 }; // Initial food position
+    let speed = 1000 / 8; // Initial speed (lower value means slower)
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw border
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, borderWidth); // Top border
+      ctx.fillRect(0, canvas.height - borderWidth, canvas.width, borderWidth); // Bottom border
+      ctx.fillRect(0, 0, borderWidth, canvas.height); // Left border
+      ctx.fillRect(canvas.width - borderWidth, 0, borderWidth, canvas.height); // Right border
+
+      // Draw snake
+      ctx.fillStyle = "#00F";
+      snake.forEach((segment, index) => {
+        if (index === 0) {
+          drawSnakeHead(segment.x, segment.y);
+        } else {
+          drawSnakeBody(segment.x, segment.y);
+        }
+      });
+
+      // Draw food
+      ctx.fillStyle = "#F00";
+      ctx.beginPath();
+      ctx.arc(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2, foodSize / 2, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Move snake
+      const head = { ...snake[0] };
+      switch (direction) {
+        case "up":
+          head.y -= 1;
+          break;
+        case "down":
+          head.y += 1;
+          break;
+        case "left":
+          head.x -= 1;
+          break;
+        case "right":
+          head.x += 1;
+          break;
+      }
+
+      // Wrap around the canvas (right to left and vice versa)
+      if (head.x < 0) {
+        head.x = canvas.width / gridSize - 1;
+      } else if (head.x >= canvas.width / gridSize) {
+        head.x = 0;
+      }
+
+      // Wrap around the canvas (bottom to top and vice versa)
+      if (head.y < 0) {
+        head.y = canvas.height / gridSize - 1;
+      } else if (head.y >= canvas.height / gridSize) {
+        head.y = 0;
+      }
+
+      snake.unshift(head);
+
+      // Check for collision with food
+      if (head.x === food.x && head.y === food.y) {
+        // Generate new random food position within canvas bounds
+        food = getRandomFoodPosition();
+      } else {
+        // Remove last segment of the snake
+        snake.pop();
+      }
+
+      setTimeout(() => requestAnimationFrame(draw), speed); // Control the speed
+    }
+
+    function resetGame() {
+      snake = [{ x: 10, y: 10 }];
+      direction = "right";
+      food = getRandomFoodPosition();
+      speed = 1000 / 8; // Reset speed
+    }
+
+    function getRandomFoodPosition() {
+      return {
+        x: Math.floor(Math.random() * (canvas.width / gridSize)),
+        y: Math.floor(Math.random() * (canvas.height / gridSize))
+      };
+    }
+
+    function changeDirection(newDirection) {
+      // Avoid reversing direction into itself
+      if ((newDirection === "up" && direction !== "down") ||
+          (newDirection === "down" && direction !== "up") ||
+          (newDirection === "left" && direction !== "right") ||
+          (newDirection === "right" && direction !== "left")) {
+        direction = newDirection;
+      }
+    }
+
+    function drawSnakeHead(x, y) {
+      // Draw snake head with eyes and tongue
+      ctx.fillStyle = "#00F";
+      ctx.beginPath();
+      ctx.rect(x * gridSize, y * gridSize, gridSize, gridSize);
+      ctx.fill();
+      ctx.strokeStyle = "#000";
+      ctx.strokeRect(x * gridSize, y * gridSize, gridSize, gridSize);
+
+      // Draw eyes
+      const eyeSize = snakeSize / 6;
+      ctx.fillStyle = "#FFF";
+      ctx.beginPath();
+      ctx.arc(x * gridSize + gridSize / 4, y * gridSize + gridSize / 4, eyeSize, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x * gridSize + (3 * gridSize) / 4, y * gridSize + gridSize / 4, eyeSize, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Draw tongue
+      ctx.fillStyle = "#F00";
+      ctx.beginPath();
+      ctx.moveTo(x * gridSize + gridSize / 2 - gridSize / 4, y * gridSize + (3 * gridSize) / 4);
+      ctx.lineTo(x * gridSize + gridSize / 2 + gridSize / 4, y * gridSize + (3 * gridSize) / 4);
+      ctx.lineTo(x * gridSize + gridSize / 2, y * gridSize + gridSize);
+      ctx.fill();
+    }
+
+    function drawSnakeBody(x, y) {
+      // Draw snake body
+      ctx.fillStyle = "#00F";
+      ctx.beginPath();
+      ctx.rect(x * gridSize, y * gridSize, gridSize, gridSize);
+      ctx.fill();
+      ctx.strokeStyle = "#000";
+      ctx.strokeRect(x * gridSize, y * gridSize, gridSize, gridSize);
+    }
+
+    draw();  // Start the game loop
+  </script>
+</body>
+</html>
